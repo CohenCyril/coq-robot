@@ -53,52 +53,28 @@ End keyed_qualifiers_anti_sym.
 
 Notation "''so[' R ]_ n" := (anti n R).
 
+(* From Unicoq Require Import Unicoq. *)
+From elpi Require Import elpi.
+Elpi Tactic unify.
+Elpi Accumulate lp:{{{
+  %(*
+    solve (goal _ _ _ _ [(trm T1), (trm T2)]) _ :- !,
+      std.assert-ok! (coq.typecheck T1 _) "T1 does not typecheck",
+      std.assert-ok! (coq.typecheck T2 _) "T2 does not typecheck",
+      std.assert-ok! (coq.unify-eq T2 T1) "terms do not unify",
+      coq.say {coq.term->string T2}.
+    solve (goal _ _ _ _ Args) _ :- !,
+      coq.say "Expected two terms but provided" Args.
+  %*)
+}}}.
+Elpi Export unify.
+
+
 Section sym_anti.
 
 Variables (R : ringType) (n : nat).
 Implicit Types M A B : 'M[R]_n.
 Implicit Types v : 'rV[R]_n.
-
-Section sym.
-
-Lemma symE M : (M \is sym n R) = (M == M^T). Proof. by []. Qed.
-
-Lemma sym_cst a : a%:M \is sym n R. Proof. by rewrite symE tr_scalar_mx. Qed.
-
-Lemma sym0 : 0 \is sym n R. Proof. by rewrite symE trmx0. Qed.
-
-Lemma symP A B : A \in sym n R -> B \in sym n R ->
-  (forall i j : 'I_n, (i <= j)%N -> A i j = B i j) -> A = B.
-Proof.
-move=> sA sB AB; apply/matrixP => i j.
-case/boolP : (i == j) => [/eqP ->|ij]; first by rewrite AB.
-wlog : i j ij / (i < j)%N.
-  move=> wlo; move: ij; rewrite neq_ltn => /orP [] ij.
-    rewrite wlo //; by apply: contraL ij => /eqP ->; by rewrite ltnn.
-  move: (sA) (sB) => /eqP -> /eqP ->; by rewrite 2!mxE AB // leq_eqVlt ij orbC.
-by move=> {}ij; rewrite AB // leq_eqVlt ij orbC.
-Qed.
-
-Lemma sym_oppr_closed : oppr_closed (sym n R).
-Proof. move=> /= M /eqP HM; apply/eqP; by rewrite linearN /= -HM. Qed.
-
-Lemma sym_addr_closed : addr_closed (sym n R).
-Proof.
-split; first by rewrite symE trmx0.
-move=> /= A B; rewrite 2!symE => /eqP sA /eqP sB.
-by rewrite symE linearD /= -sA -sB.
-Qed.
-
-HB.instance Definition _ := GRing.isAddClosed.Build _ _ sym_addr_closed.
-HB.instance Definition _ := GRing.isOppClosed.Build _ _ sym_oppr_closed.
-
-Lemma sym_scaler_closed : GRing.scaler_closed (sym n R).
-Proof. move=> ? ?; rewrite 2!symE => /eqP H; by rewrite linearZ /= -H. Qed.
-(* TODO: Canonical? *)
-
-HB.instance Definition _ := GRing.isScaleClosed.Build _ _ _ sym_scaler_closed.
-
-End sym.
 
 Section anti.
 
@@ -108,7 +84,18 @@ Lemma antiP M : M \is 'so[R]_n -> M^T = - M.
 Proof. by rewrite antiE -eqr_oppLR => /eqP <-. Qed.
 
 Lemma antiN M : (- M \is 'so[R]_n) = (M \is 'so[R]_n).
-Proof. by apply/idP/idP; rewrite !antiE linearN /= opprK eqr_oppLR. Qed.
+Proof.
+apply/idP/idP; rewrite !antiE.
+
+Set Debug "unification".
+(* Set Unicoq Debug. *)
+(* Fail Fail munify (trmx (- M)) (@GRing.Linear.sort _ _ (GRing_Zmodule__to__GRing_Nmodule _) _ _ (- _)). *)
+(* elpi unify (trmx (- M)) (@GRing.Linear.sort _ _ _ _ _ (- _)). *)
+elpi unify (trmx (- M)) (@GRing.Linear.sort _ _ (GRing_Zmodule__to__GRing_Nmodule _) _ _ (- _)).
+Stop.
+
+all: rewrite [(- M)^T]linearN/=.
+all: by rewrite /= opprK eqr_oppLR. Qed.
 
 Lemma trmx_anti M : (M \is 'so[R]_n) = (M^T \is 'so[R]_n).
 Proof.
@@ -160,7 +147,10 @@ Proof.
 move=> soA soB AB; apply/matrixP => i j.
 case/boolP : (i == j) => [/eqP ->|ij]; first by do 2 rewrite anti_diag //.
 wlog : i j ij / (i < j)%N.
-  move=> wlo; move: ij; rewrite neq_ltn => /orP [] ij.
+  move=> wlo; move: ij.
+  Set Unicoq Debug.
+
+  Fail rewrite neq_ltn. => /orP [] ij.
     rewrite wlo //; by apply: contraL ij => /eqP ->; by rewrite ltnn.
   move: (soA); by rewrite antiE => /eqP ->; rewrite 2!mxE AB // opprK.
 move=> {}ij; rewrite AB //.
