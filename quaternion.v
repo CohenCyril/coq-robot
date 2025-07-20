@@ -1,4 +1,4 @@
-(* coq-robot (c) 2017 AIST and INRIA. License: LGPL-2.1-or-later. *)
+(* coq-robot (c) 2025 AIST and INRIA. License: LGPL-2.1-or-later. *)
 From HB Require Import structures.
 From mathcomp Require Import all_ssreflect ssralg ssrint ssrnum rat poly.
 From mathcomp Require Import closed_field polyrcf matrix mxalgebra mxpoly zmodp.
@@ -1284,7 +1284,7 @@ Fact invdE x : x \in unitd ->
 Proof.
 move : x => [q r] /=; rewrite inE /= => qu; rewrite /invd inE /= qu.
 rewrite /dual_of_mat !(mxE,sum2E) /=; Simp.r.
-by rewrite /= mulr1.
+by [].
 Qed.
 
 Lemma mulVd : {in unitd, left_inverse 1 invd *%R}.
@@ -1448,7 +1448,7 @@ Notation "x '^*dq'" := (conjdq x) : dual_scope.
 
 (* WIP: dual quaternions and rigid body transformations *)
 Section dquat_rbt.
-Variable R : realType (*realType*).
+Variable R : realType.
 Local Open Scope dual_scope.
 Implicit Types u x : dquat R.
 
